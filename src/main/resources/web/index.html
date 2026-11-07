@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="uk">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>C Parser · JFlex + CUP</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<header class="topbar">
+    <div class="brand">
+        <div class="logo">C</div>
+        <div>
+            <h1>Синтаксичний аналізатор мови C</h1>
+            <p>JFlex (лексер) · CUP (LALR(1)-парсер) · AST · семантика · інтерпретатор · трансляція в JavaScript</p>
+        </div>
+    </div>
+    <div class="toolbar">
+        <select id="examples" title="Приклади програм"></select>
+        <button id="analyze" class="primary" title="Ctrl+Enter">Аналізувати</button>
+    </div>
+</header>
+
+<main class="layout">
+    <section class="panel editor-panel">
+        <div class="panel-head">
+            <span>Вихідний код</span>
+            <span id="cursor" class="muted">1:1</span>
+        </div>
+        <div class="editor">
+            <pre id="gutter" class="gutter" aria-hidden="true"></pre>
+            <textarea id="source" spellcheck="false" wrap="off"></textarea>
+        </div>
+        <div id="pipeline" class="pipeline"></div>
+        <div id="diagnostics" class="diagnostics"></div>
+    </section>
+
+    <section class="panel results-panel">
+        <nav class="tabs" id="tabs">
+            <button data-tab="ast" class="active">Дерево AST</button>
+            <button data-tab="tokens">Токени</button>
+            <button data-tab="trace">Розбір LALR(1)</button>
+            <button data-tab="run">Виконання</button>
+            <button data-tab="js">JavaScript</button>
+            <button data-tab="grammar">Граматика</button>
+            <button data-tab="conflicts">Конфлікти</button>
+        </nav>
+
+        <div class="tab active" id="tab-ast">
+            <div class="tab-tools">
+                <button id="ast-expand">Розгорнути все</button>
+                <button id="ast-statements">Згорнути вирази</button>
+                <button id="ast-fit">Вмістити</button>
+                <div class="legend" id="legend"></div>
+            </div>
+            <div id="ast" class="ast-view"></div>
+            <div id="tooltip" class="tooltip" hidden></div>
+        </div>
+
+        <div class="tab" id="tab-tokens">
+            <div class="tab-tools"><span id="tokens-info" class="muted"></span></div>
+            <div class="scroll"><table class="grid" id="tokens"></table></div>
+        </div>
+
+        <div class="tab" id="tab-trace">
+            <div class="tab-tools">
+                <div class="segmented" id="trace-filter">
+                    <button data-filter="all" class="active">Усі кроки</button>
+                    <button data-filter="shift">shift</button>
+                    <button data-filter="reduce">reduce</button>
+                    <button data-filter="error">error</button>
+                </div>
+                <span id="trace-info" class="muted"></span>
+            </div>
+            <div class="scroll"><table class="grid trace" id="trace"></table></div>
+        </div>
+
+        <div class="tab" id="tab-run">
+            <div id="run-info" class="run-info"></div>
+            <pre id="run-output" class="console"></pre>
+        </div>
+
+        <div class="tab" id="tab-js">
+            <div class="tab-tools">
+                <label class="check"><input type="checkbox" id="js-prelude"> показати допоміжні функції</label>
+                <button id="js-run" class="primary">Виконати в браузері</button>
+                <button id="js-download">Завантажити .js</button>
+                <span id="js-compare"></span>
+            </div>
+            <pre id="js-code" class="code"></pre>
+            <pre id="js-output" class="console" hidden></pre>
+        </div>
+
+        <div class="tab" id="tab-grammar">
+            <div class="tab-tools">
+                <input id="grammar-filter" type="search" placeholder="Фільтр продукцій, напр. expr або IF">
+                <span id="grammar-info" class="muted"></span>
+            </div>
+            <div class="scroll">
+                <h3>Пріоритети та асоціативність (від найнижчого)</h3>
+                <table class="grid" id="precedence"></table>
+                <h3>Продукції</h3>
+                <table class="grid" id="productions"></table>
+                <details><summary>Специфікація CUP (c.cup)</summary><pre class="code" id="cup-source"></pre></details>
+                <details><summary>Специфікація JFlex (c.flex)</summary><pre class="code" id="flex-source"></pre></details>
+            </div>
+        </div>
+
+        <div class="tab" id="tab-conflicts">
+            <div class="tab-tools">
+                <select id="conflict-presets"></select>
+                <label>-expect <input id="conflict-expect" type="number" min="0" value="0"></label>
+                <label class="check"><input type="checkbox" id="conflict-states"> стани LALR</label>
+                <label class="check"><input type="checkbox" id="conflict-tables"> таблиці action/goto</label>
+                <button id="conflict-run" class="primary">Запустити CUP</button>
+            </div>
+            <div class="conflict-layout">
+                <textarea id="conflict-grammar" spellcheck="false" wrap="off"></textarea>
+                <div class="conflict-result">
+                    <div id="conflict-summary" class="run-info"></div>
+                    <pre id="conflict-output" class="console"></pre>
+                </div>
+            </div>
+        </div>
+    </section>
+</main>
+
+<script src="/d3.min.js"></script>
+<script src="/app.js"></script>
+</body>
+</html>

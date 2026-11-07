@@ -1,0 +1,13 @@
+terminal ID, SEMI;
+
+non terminal stmt, variable, function_name;
+
+start with stmt;
+
+stmt          ::= variable SEMI
+                | function_name SEMI
+                ;
+
+variable      ::= ID ;
+
+function_name ::= ID ;

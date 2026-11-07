@@ -1,0 +1,19 @@
+terminal PLUS, MINUS, TIMES, DIVIDE, LPAREN, RPAREN, NUMBER;
+
+non terminal expr, term, factor;
+
+start with expr;
+
+expr   ::= expr PLUS term
+         | expr MINUS term
+         | term
+         ;
+
+term   ::= term TIMES factor
+         | term DIVIDE factor
+         | factor
+         ;
+
+factor ::= LPAREN expr RPAREN
+         | NUMBER
+         ;

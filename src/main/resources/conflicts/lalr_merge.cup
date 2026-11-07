@@ -1,0 +1,15 @@
+terminal A, B, C, D, E;
+
+non terminal s, x, y;
+
+start with s;
+
+s ::= A x C
+    | A y D
+    | B y C
+    | B x D
+    ;
+
+x ::= E ;
+
+y ::= E ;

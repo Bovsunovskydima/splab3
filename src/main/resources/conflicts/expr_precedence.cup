@@ -1,0 +1,16 @@
+terminal PLUS, MINUS, TIMES, DIVIDE, LPAREN, RPAREN, NUMBER;
+
+non terminal expr;
+
+precedence left PLUS, MINUS;
+precedence left TIMES, DIVIDE;
+
+start with expr;
+
+expr ::= expr PLUS expr
+       | expr MINUS expr
+       | expr TIMES expr
+       | expr DIVIDE expr
+       | LPAREN expr RPAREN
+       | NUMBER
+       ;

@@ -1,0 +1,7 @@
+expr_ambiguous.cup|Неоднозначна граматика виразів (shift-reduce)|0
+expr_precedence.cup|Та сама граматика + precedence/associativity|0
+expr_layered.cup|Однозначна граматика expr/term/factor|0
+dangling_else.cup|Dangling else без пріоритетів (shift-reduce)|0
+dangling_else_prec.cup|Dangling else з %prec|0
+reduce_reduce.cup|Конфлікт reduce-reduce|0
+lalr_merge.cup|LR(1), але не LALR(1): злиття станів|0

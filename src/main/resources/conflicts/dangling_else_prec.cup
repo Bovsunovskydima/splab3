@@ -1,0 +1,13 @@
+terminal IF, ELSE, LPAREN, RPAREN, COND, OTHER, SEMI, IFX;
+
+non terminal stmt;
+
+precedence nonassoc IFX;
+precedence nonassoc ELSE;
+
+start with stmt;
+
+stmt ::= IF LPAREN COND RPAREN stmt %prec IFX
+       | IF LPAREN COND RPAREN stmt ELSE stmt
+       | OTHER SEMI
+       ;

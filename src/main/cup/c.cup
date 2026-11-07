@@ -1,0 +1,287 @@
+package cparser.gen;
+
+import java_cup.runtime.*;
+import cparser.ast.*;
+import java.util.ArrayList;
+
+terminal INT, CHAR, FLOAT, DOUBLE, VOID;
+terminal IF, ELSE, WHILE, DO, FOR, RETURN, BREAK, CONTINUE;
+terminal PLUS, MINUS, STAR, SLASH, PERCENT, INC, DEC;
+terminal ASSIGN, PLUS_ASSIGN, MINUS_ASSIGN, STAR_ASSIGN, SLASH_ASSIGN, PERCENT_ASSIGN;
+terminal AND_ASSIGN, OR_ASSIGN, XOR_ASSIGN, SHL_ASSIGN, SHR_ASSIGN;
+terminal EQ, NE, LT, GT, LE, GE, AND, OR, NOT;
+terminal BITAND, BITOR, BITXOR, BITNOT, SHL, SHR;
+terminal QUESTION, COLON, LPAREN, RPAREN, LBRACE, RBRACE, LBRACKET, RBRACKET, SEMI, COMMA;
+terminal String IDENT;
+terminal String STRING_LIT;
+terminal Long INT_LIT;
+terminal Double FLOAT_LIT;
+terminal Integer CHAR_LIT;
+terminal UMINUS, IFX;
+
+non terminal Program program;
+non terminal ArrayList<Node> external_list;
+non terminal Node external;
+non terminal FunctionDef function;
+non terminal ArrayList<Param> params;
+non terminal ArrayList<Param> param_list;
+non terminal Param param;
+non terminal Integer param_dims;
+non terminal Type type_spec;
+non terminal VarDecl declaration;
+non terminal ArrayList<Declarator> init_declarators;
+non terminal Declarator init_declarator;
+non terminal Declarator declarator;
+non terminal Node initializer;
+non terminal ArrayList<Node> initializer_list;
+non terminal Block block;
+non terminal ArrayList<Node> block_items;
+non terminal Node block_item;
+non terminal Node statement;
+non terminal Node for_init;
+non terminal Expr expr;
+non terminal Expr opt_expr;
+non terminal ArrayList<Expr> args;
+non terminal ArrayList<Expr> arg_list;
+
+precedence right ASSIGN, PLUS_ASSIGN, MINUS_ASSIGN, STAR_ASSIGN, SLASH_ASSIGN, PERCENT_ASSIGN,
+                 AND_ASSIGN, OR_ASSIGN, XOR_ASSIGN, SHL_ASSIGN, SHR_ASSIGN;
+precedence right QUESTION, COLON;
+precedence left OR;
+precedence left AND;
+precedence left BITOR;
+precedence left BITXOR;
+precedence left BITAND;
+precedence left EQ, NE;
+precedence left LT, GT, LE, GE;
+precedence left SHL, SHR;
+precedence left PLUS, MINUS;
+precedence left STAR, SLASH, PERCENT;
+precedence right UMINUS, NOT, BITNOT, INC, DEC;
+precedence left LBRACKET;
+precedence nonassoc IFX;
+precedence nonassoc ELSE;
+
+start with program;
+
+program ::= external_list:l
+              {: RESULT = new Program(l); :}
+          |
+              {: RESULT = new Program(new ArrayList<Node>()); :}
+          ;
+
+external_list ::= external:e
+                    {: RESULT = new ArrayList<Node>(); RESULT.add(e); :}
+                | external_list:l external:e
+                    {: l.add(e); RESULT = l; :}
+                ;
+
+external ::= function:f
+               {: RESULT = f; :}
+           | declaration:d
+               {: RESULT = d; :}
+           ;
+
+function ::= type_spec:t IDENT:n LPAREN params:p RPAREN block:b
+               {: RESULT = new FunctionDef(t, n, p, b, nleft, nright); :}
+           | type_spec:t IDENT:n LPAREN params:p RPAREN SEMI
+               {: RESULT = new FunctionDef(t, n, p, null, nleft, nright); :}
+           ;
+
+params ::=
+             {: RESULT = new ArrayList<Param>(); :}
+         | VOID
+             {: RESULT = new ArrayList<Param>(); :}
+         | param_list:l
+             {: RESULT = l; :}
+         ;
+
+param_list ::= param:p
+                 {: RESULT = new ArrayList<Param>(); RESULT.add(p); :}
+             | param_list:l COMMA param:p
+                 {: l.add(p); RESULT = l; :}
+             ;
+
+param ::= type_spec:t IDENT:n
+            {: RESULT = new Param(t, n, nleft, nright); :}
+        | type_spec:t IDENT:n param_dims:d
+            {: RESULT = new Param(t.withRank(d), n, nleft, nright); :}
+        ;
+
+param_dims ::= LBRACKET RBRACKET
+                 {: RESULT = 1; :}
+             | LBRACKET expr RBRACKET
+                 {: RESULT = 1; :}
+             | param_dims:d LBRACKET expr RBRACKET
+                 {: RESULT = d + 1; :}
+             ;
+
+type_spec ::= INT     {: RESULT = Type.INT; :}
+            | CHAR    {: RESULT = Type.CHAR; :}
+            | FLOAT   {: RESULT = Type.FLOAT; :}
+            | DOUBLE  {: RESULT = Type.DOUBLE; :}
+            | VOID    {: RESULT = Type.VOID; :}
+            ;
+
+declaration ::= type_spec:t init_declarators:l SEMI
+                  {: RESULT = new VarDecl(t, l, tleft, tright); :}
+              ;
+
+init_declarators ::= init_declarator:d
+                       {: RESULT = new ArrayList<Declarator>(); RESULT.add(d); :}
+                   | init_declarators:l COMMA init_declarator:d
+                       {: l.add(d); RESULT = l; :}
+                   ;
+
+init_declarator ::= declarator:d
+                      {: RESULT = d; :}
+                  | declarator:d ASSIGN initializer:i
+                      {: d.init = i; RESULT = d; :}
+                  ;
+
+declarator ::= IDENT:n
+                 {: RESULT = new Declarator(n, nleft, nright); :}
+             | declarator:d LBRACKET expr:e RBRACKET
+                 {: d.dims.add(e); RESULT = d; :}
+             | declarator:d LBRACKET RBRACKET
+                 {: d.dims.add(null); RESULT = d; :}
+             ;
+
+initializer ::= expr:e
+                  {: RESULT = e; :}
+              | LBRACE:b initializer_list:l RBRACE
+                  {: RESULT = new InitList(l, bleft, bright); :}
+              | LBRACE:b initializer_list:l COMMA RBRACE
+                  {: RESULT = new InitList(l, bleft, bright); :}
+              ;
+
+initializer_list ::= initializer:i
+                       {: RESULT = new ArrayList<Node>(); RESULT.add(i); :}
+                   | initializer_list:l COMMA initializer:i
+                       {: l.add(i); RESULT = l; :}
+                   ;
+
+block ::= LBRACE:b block_items:l RBRACE
+            {: RESULT = new Block(l, bleft, bright); :}
+        | LBRACE:b RBRACE
+            {: RESULT = new Block(new ArrayList<Node>(), bleft, bright); :}
+        ;
+
+block_items ::= block_item:i
+                  {: RESULT = new ArrayList<Node>(); RESULT.add(i); :}
+              | block_items:l block_item:i
+                  {: l.add(i); RESULT = l; :}
+              ;
+
+block_item ::= declaration:d
+                 {: RESULT = d; :}
+             | statement:s
+                 {: RESULT = s; :}
+             ;
+
+statement ::= block:b
+                {: RESULT = b; :}
+            | expr:e SEMI
+                {: RESULT = new ExprStmt(e); :}
+            | SEMI:s
+                {: RESULT = new EmptyStmt(sleft, sright); :}
+            | IF:k LPAREN expr:c RPAREN statement:t
+                {: RESULT = new If(c, t, null, kleft, kright); :}
+                %prec IFX
+            | IF:k LPAREN expr:c RPAREN statement:t ELSE statement:f
+                {: RESULT = new If(c, t, f, kleft, kright); :}
+            | WHILE:k LPAREN expr:c RPAREN statement:b
+                {: RESULT = new While(c, b, kleft, kright); :}
+            | DO:k statement:b WHILE LPAREN expr:c RPAREN SEMI
+                {: RESULT = new DoWhile(b, c, kleft, kright); :}
+            | FOR:k LPAREN for_init:i opt_expr:c SEMI opt_expr:s RPAREN statement:b
+                {: RESULT = new For(i, c, s, b, kleft, kright); :}
+            | RETURN:k SEMI
+                {: RESULT = new Return(null, kleft, kright); :}
+            | RETURN:k expr:e SEMI
+                {: RESULT = new Return(e, kleft, kright); :}
+            | BREAK:k SEMI
+                {: RESULT = new Break(kleft, kright); :}
+            | CONTINUE:k SEMI
+                {: RESULT = new Continue(kleft, kright); :}
+            | error:e SEMI
+                {: RESULT = new ErrorNode(eleft, eright); :}
+            ;
+
+for_init ::= declaration:d
+               {: RESULT = d; :}
+           | expr:e SEMI
+               {: RESULT = new ExprStmt(e); :}
+           | SEMI:s
+               {: RESULT = new EmptyStmt(sleft, sright); :}
+           ;
+
+opt_expr ::=
+               {: RESULT = null; :}
+           | expr:e
+               {: RESULT = e; :}
+           ;
+
+expr ::= expr:a PLUS:o expr:b             {: RESULT = new Binary("+", a, b, oleft, oright); :}
+       | expr:a MINUS:o expr:b            {: RESULT = new Binary("-", a, b, oleft, oright); :}
+       | expr:a STAR:o expr:b             {: RESULT = new Binary("*", a, b, oleft, oright); :}
+       | expr:a SLASH:o expr:b            {: RESULT = new Binary("/", a, b, oleft, oright); :}
+       | expr:a PERCENT:o expr:b          {: RESULT = new Binary("%", a, b, oleft, oright); :}
+       | expr:a SHL:o expr:b              {: RESULT = new Binary("<<", a, b, oleft, oright); :}
+       | expr:a SHR:o expr:b              {: RESULT = new Binary(">>", a, b, oleft, oright); :}
+       | expr:a LT:o expr:b               {: RESULT = new Binary("<", a, b, oleft, oright); :}
+       | expr:a GT:o expr:b               {: RESULT = new Binary(">", a, b, oleft, oright); :}
+       | expr:a LE:o expr:b               {: RESULT = new Binary("<=", a, b, oleft, oright); :}
+       | expr:a GE:o expr:b               {: RESULT = new Binary(">=", a, b, oleft, oright); :}
+       | expr:a EQ:o expr:b               {: RESULT = new Binary("==", a, b, oleft, oright); :}
+       | expr:a NE:o expr:b               {: RESULT = new Binary("!=", a, b, oleft, oright); :}
+       | expr:a BITAND:o expr:b           {: RESULT = new Binary("&", a, b, oleft, oright); :}
+       | expr:a BITXOR:o expr:b           {: RESULT = new Binary("^", a, b, oleft, oright); :}
+       | expr:a BITOR:o expr:b            {: RESULT = new Binary("|", a, b, oleft, oright); :}
+       | expr:a AND:o expr:b              {: RESULT = new Binary("&&", a, b, oleft, oright); :}
+       | expr:a OR:o expr:b               {: RESULT = new Binary("||", a, b, oleft, oright); :}
+       | expr:a ASSIGN:o expr:b           {: RESULT = new Assign("=", a, b, oleft, oright); :}
+       | expr:a PLUS_ASSIGN:o expr:b      {: RESULT = new Assign("+=", a, b, oleft, oright); :}
+       | expr:a MINUS_ASSIGN:o expr:b     {: RESULT = new Assign("-=", a, b, oleft, oright); :}
+       | expr:a STAR_ASSIGN:o expr:b      {: RESULT = new Assign("*=", a, b, oleft, oright); :}
+       | expr:a SLASH_ASSIGN:o expr:b     {: RESULT = new Assign("/=", a, b, oleft, oright); :}
+       | expr:a PERCENT_ASSIGN:o expr:b   {: RESULT = new Assign("%=", a, b, oleft, oright); :}
+       | expr:a AND_ASSIGN:o expr:b       {: RESULT = new Assign("&=", a, b, oleft, oright); :}
+       | expr:a OR_ASSIGN:o expr:b        {: RESULT = new Assign("|=", a, b, oleft, oright); :}
+       | expr:a XOR_ASSIGN:o expr:b       {: RESULT = new Assign("^=", a, b, oleft, oright); :}
+       | expr:a SHL_ASSIGN:o expr:b       {: RESULT = new Assign("<<=", a, b, oleft, oright); :}
+       | expr:a SHR_ASSIGN:o expr:b       {: RESULT = new Assign(">>=", a, b, oleft, oright); :}
+       | expr:c QUESTION:o expr:a COLON expr:b
+                                          {: RESULT = new Conditional(c, a, b, oleft, oright); :}
+       | MINUS:o expr:a                   {: RESULT = new Unary("-", a, oleft, oright); :} %prec UMINUS
+       | PLUS:o expr:a                    {: RESULT = new Unary("+", a, oleft, oright); :} %prec UMINUS
+       | NOT:o expr:a                     {: RESULT = new Unary("!", a, oleft, oright); :}
+       | BITNOT:o expr:a                  {: RESULT = new Unary("~", a, oleft, oright); :}
+       | INC:o expr:a                     {: RESULT = new Unary("++", a, oleft, oright); :}
+       | DEC:o expr:a                     {: RESULT = new Unary("--", a, oleft, oright); :}
+       | expr:a INC:o                     {: RESULT = new Postfix("++", a, oleft, oright); :}
+       | expr:a DEC:o                     {: RESULT = new Postfix("--", a, oleft, oright); :}
+       | LPAREN:o type_spec:t RPAREN expr:a
+                                          {: RESULT = new Cast(t, a, oleft, oright); :} %prec UMINUS
+       | expr:a LBRACKET:o expr:i RBRACKET
+                                          {: RESULT = new Index(a, i, oleft, oright); :}
+       | IDENT:n LPAREN args:l RPAREN     {: RESULT = new Call(n, l, nleft, nright); :}
+       | LPAREN expr:a RPAREN             {: RESULT = a; :}
+       | IDENT:n                          {: RESULT = new Ident(n, nleft, nright); :}
+       | INT_LIT:v                        {: RESULT = new IntLit(v, vleft, vright); :}
+       | FLOAT_LIT:v                      {: RESULT = new FloatLit(v, vleft, vright); :}
+       | CHAR_LIT:v                       {: RESULT = new CharLit(v, vleft, vright); :}
+       | STRING_LIT:v                     {: RESULT = new StringLit(v, vleft, vright); :}
+       ;
+
+args ::=
+           {: RESULT = new ArrayList<Expr>(); :}
+       | arg_list:l
+           {: RESULT = l; :}
+       ;
+
+arg_list ::= expr:e
+               {: RESULT = new ArrayList<Expr>(); RESULT.add(e); :}
+           | arg_list:l COMMA expr:e
+               {: l.add(e); RESULT = l; :}
+           ;

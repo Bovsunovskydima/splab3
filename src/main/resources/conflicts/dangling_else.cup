@@ -1,0 +1,10 @@
+terminal IF, ELSE, LPAREN, RPAREN, COND, OTHER, SEMI;
+
+non terminal stmt;
+
+start with stmt;
+
+stmt ::= IF LPAREN COND RPAREN stmt
+       | IF LPAREN COND RPAREN stmt ELSE stmt
+       | OTHER SEMI
+       ;
